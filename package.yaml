@@ -1,0 +1,55 @@
+---
+name: lemon-squeezy
+version: 1.0.0.0
+
+license: OtherLicense
+license-file: LICENSE
+
+dependencies:
+  - aeson
+  - aeson-casing
+  - base
+  - bytestring
+  - email-validate
+  - genvalidity
+  - genvalidity-containers
+  - genvalidity-text
+  - genvalidity-time
+  - optparse-applicative
+  - optparse-generic
+  - QuickCheck
+  - relude
+  - scientific
+  - sydtest
+  - text
+  - time
+  - url
+
+library:
+  source-dirs: ./src/
+
+ghc-options:
+  - -fwrite-ide-info
+  - -Wall
+  - -Wincomplete-uni-patterns
+  - -Wincomplete-record-updates
+  - -Wpartial-fields
+  - -Widentities
+  - -Wredundant-constraints
+  - -Wcpp-undef
+  - -Wunused-packages
+
+tests:
+  lemon-squeezy-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N
+    dependencies:
+      - genvalidity-sydtest
+      - genvalidity-sydtest-aeson
+      - sydtest
+      - sydtest-discover
+      - lemon-squeezy

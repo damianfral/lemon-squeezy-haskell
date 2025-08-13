@@ -1,0 +1,23 @@
+{
+  "type": "discounts",
+  "id": "1",
+  "attributes": {
+    "store_id": 1,
+    "name": "10%",
+    "code": "10PERC",
+    "amount": 10,
+    "amount_type": "percent",
+    "is_limited_to_products": false,
+    "is_limited_redemptions": false,
+    "max_redemptions": 0,
+    "starts_at": null,
+    "expires_at": null,
+    "duration": "once",
+    "duration_in_months": 1,
+    "status": "published",
+    "status_formatted": "Published",
+    "created_at": "2021-05-24T14:15:06.000000Z",
+    "updated_at": "2021-05-24T14:15:06.000000Z",
+    "test_mode": false
+  }
+}

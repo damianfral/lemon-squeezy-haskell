@@ -1,0 +1,20 @@
+{
+  "type": "files",
+  "id": "1",
+  "attributes": {
+    "variant_id": 168,
+    "identifier": "6dce5ba7-76f2-481f-ad1e-9c2bec6eb0e2",
+    "name": "my_product.zip",
+    "extension": "zip",
+    "download_url": "https://app.lemonsqueezy.com/download/6dce5ba7-76f2-481f-ad1e-9c2bec6eb0e2?expires=1636383388&signature=886a63faf7215c54011accfa08578b1b687def66f767092629f263061b3a253a",
+    "size": 874694,
+    "size_formatted": "854 KB",
+    "version": "1.0.0",
+    "sort": 1,
+    "status": "published",
+    "createdAt": "2021-11-05T10:22:14.000000Z",
+    "updatedAt": "2021-11-05T16:16:33.000000Z",
+    "test_mode": false
+  }
+}
+
