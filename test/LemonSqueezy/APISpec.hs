@@ -186,11 +186,7 @@ subscriptionsAPISpec = describe "Subscriptions" $ do
     Right (APIObjects _ _ _ subscriptions) <- pure listRes
     forM_ subscriptions $ \subscription ->
       LS.objectId subscription `shouldSatisfy` isJust
-    let isActiveSubscription s = case LS.objectAttributes s of
-          Just attrs -> subscriptionAttributesStatus attrs == Active
-          _ -> False
-    let activeSubs = filter isActiveSubscription subscriptions
-    case listToMaybe activeSubs of
+    case listToMaybe subscriptions of
       Just (LS.Object {LS.objectId = Just subscriptionID}) -> do
         -- Retrieve a subscription
         retrieveRes <-
@@ -205,11 +201,11 @@ subscriptionsAPISpec = describe "Subscriptions" $ do
         let currentBillingAnchor =
               subscriptionAttributesBillingAnchor retrievedAttrs
         let newBillingAnchor =
-              if currentBillingAnchor >= 28
-                then 1
-                else currentBillingAnchor + 1
+              if currentBillingAnchor >= Just 28
+                then Just 1
+                else (+ 1) <$> currentBillingAnchor
         let updatedAttrs =
-              retrievedAttrs
+              emptySubscription
                 { subscriptionAttributesBillingAnchor = newBillingAnchor
                 }
         let subscriptionToUpdate =
@@ -225,14 +221,14 @@ subscriptionsAPISpec = describe "Subscriptions" $ do
         (LS.Object {LS.objectAttributes = Just newAttrs}) <- pure obj''
         subscriptionAttributesBillingAnchor newAttrs `shouldBe` newBillingAnchor
 
-        -- Cancel a subscription
-        -- WARNING: This is a destructive action.
-        cancelRes <-
-          runAPI apiClientEnv $ cancelSubscription apiKey subscriptionID
-        cancelRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ obj''') <- pure cancelRes
-        (LS.Object {LS.objectAttributes = Just cancelledAttrs}) <- pure obj'''
-        subscriptionAttributesCancelled cancelledAttrs `shouldBe` True
+      -- Cancel a subscription
+      -- -- WARNING: This is a destructive action.
+      -- cancelRes <-
+      --   runAPI apiClientEnv $ cancelSubscription apiKey subscriptionID
+      -- cancelRes `shouldSatisfy` isRight
+      -- Right (APIObject _ _ _ obj''') <- pure cancelRes
+      -- (LS.Object {LS.objectAttributes = Just cancelledAttrs}) <- pure obj'''
+      -- subscriptionAttributesCancelled cancelledAttrs `shouldBe` True
       _ -> expectationFailure "No active subscriptions found"
 
 filesAPISpec :: TestDefM outers APIClientEnv ()
@@ -383,7 +379,6 @@ checkoutsAPISpec = describe "Checkouts" $ do
       runAPI apiClientEnv $ createCheckout apiKey checkoutToCreate
     createdCheckoutRes `shouldSatisfy` isRight
     Right createdCheckout <- pure createdCheckoutRes
-    print createdCheckout
     APIObject _ _ _ (LS.Object {LS.objectId = Just checkoutID}) <-
       pure createdCheckout
 

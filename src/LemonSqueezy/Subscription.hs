@@ -6,7 +6,7 @@
 module LemonSqueezy.Subscription where
 
 import Data.Aeson
-import Data.Aeson.Casing (aesonPrefix, snakeCase)
+import Data.Aeson.Casing (aesonDrop, aesonPrefix, snakeCase)
 import Data.GenValidity
 import Data.GenValidity.Text ()
 import Data.GenValidity.Time ()
@@ -89,10 +89,11 @@ data SubscriptionFirstItem = SubscriptionFirstItem
   deriving (Show, Eq, Generic)
 
 instance FromJSON SubscriptionFirstItem where
-  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+  parseJSON =
+    genericParseJSON $ aesonDrop (length "SubscriptionFirstItem") snakeCase
 
 instance ToJSON SubscriptionFirstItem where
-  toJSON = genericToJSON $ aesonPrefix snakeCase
+  toJSON = genericToJSON $ aesonDrop (length "SubscriptionFirstItem") snakeCase
 
 instance Validity SubscriptionFirstItem
 
@@ -112,10 +113,10 @@ data SubscriptionURLs = SubscriptionURLs
   deriving (Show, Eq, Generic)
 
 instance FromJSON SubscriptionURLs where
-  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+  parseJSON = genericParseJSON $ aesonDrop (length "SubscriptionURLs") snakeCase
 
 instance ToJSON SubscriptionURLs where
-  toJSON = genericToJSON $ aesonPrefix snakeCase
+  toJSON = genericToJSON $ aesonDrop (length "SubscriptionURLs") snakeCase
 
 instance Validity SubscriptionURLs
 
@@ -123,29 +124,29 @@ instance GenValid SubscriptionURLs
 
 data SubscriptionAttributes = SubscriptionAttributes
   { -- | The ID of the store this subscription belongs to.
-    subscriptionAttributesStoreId :: StoreID,
+    subscriptionAttributesStoreId :: Maybe StoreID,
     -- | The ID of the customer this subscription belongs to.
-    subscriptionAttributesCustomerId :: CustomerID,
+    subscriptionAttributesCustomerId :: Maybe CustomerID,
     -- | The ID of the order associated with this subscription.
-    subscriptionAttributesOrderId :: OrderID,
+    subscriptionAttributesOrderId :: Maybe OrderID,
     -- | The ID of the order item associated with this subscription.
-    subscriptionAttributesOrderItemId :: OrderItemID,
+    subscriptionAttributesOrderItemId :: Maybe OrderItemID,
     -- | The ID of the product associated with this subscription.
-    subscriptionAttributesProductId :: ProductID,
+    subscriptionAttributesProductId :: Maybe ProductID,
     -- | The ID of the variant associated with this subscription.
-    subscriptionAttributesVariantId :: VariantID,
+    subscriptionAttributesVariantId :: Maybe VariantID,
     -- | The name of the product.
-    subscriptionAttributesProductName :: Text,
+    subscriptionAttributesProductName :: Maybe Text,
     -- | The name of the variant.
-    subscriptionAttributesVariantName :: Text,
+    subscriptionAttributesVariantName :: Maybe Text,
     -- | The full name of the customer.
-    subscriptionAttributesUserName :: Text,
+    subscriptionAttributesUserName :: Maybe Text,
     -- | The email address of the customer.
-    subscriptionAttributesUserEmail :: Text,
+    subscriptionAttributesUserEmail :: Maybe Text,
     -- | The status of the subscription.
-    subscriptionAttributesStatus :: SubscriptionStatus,
+    subscriptionAttributesStatus :: Maybe SubscriptionStatus,
     -- | The title-case formatted status of the subscription.
-    subscriptionAttributesStatusFormatted :: Text,
+    subscriptionAttributesStatusFormatted :: Maybe Text,
     -- | Lowercase brand of the card used to pay for the latest
     -- subscription payment.
     subscriptionAttributesCardBrand :: Maybe Text,
@@ -159,42 +160,80 @@ data SubscriptionAttributes = SubscriptionAttributes
     -- options for the subscription, if set.
     subscriptionAttributesPause :: Maybe SubscriptionPause,
     -- | A boolean indicating if the subscription has been cancelled.
-    subscriptionAttributesCancelled :: Bool,
+    subscriptionAttributesCancelled :: Maybe Bool,
     -- | If the subscription has a free trial, this will be an 'ISO 8601'
     -- formatted date-time string indicating when the trial period ends.
     subscriptionAttributesTrialEndsAt :: Maybe UTCTime,
     -- | An integer representing a day of the month (21 equals 21st day
     -- of the month).
-    subscriptionAttributesBillingAnchor :: Int,
+    subscriptionAttributesBillingAnchor :: Maybe Int,
     -- | An object representing the first 'SubscriptionItem' belonging
     -- to this subscription.
     subscriptionAttributesFirstSubscriptionItem :: Maybe SubscriptionFirstItem,
     -- | An object of customer-facing URLs for managing the subscription.
-    subscriptionAttributesUrls :: SubscriptionURLs,
+    subscriptionAttributesUrls :: Maybe SubscriptionURLs,
     -- | An 'ISO 8601' formatted date-time string indicating the end of
     -- the current billing cycle, and when the next invoice will be issued.
-    subscriptionAttributesRenewsAt :: UTCTime,
+    subscriptionAttributesRenewsAt :: Maybe UTCTime,
     -- | If the subscription has as status of `cancelled` or `expired`,
     -- this will be an 'ISO 8601' formatted date-time string indicating
     -- when the subscription expires (or expired).
     subscriptionAttributesEndsAt :: Maybe UTCTime,
     -- | An 'ISO 8601' formatted date-time string indicating when the
     -- object was created.
-    subscriptionAttributesCreatedAt :: UTCTime,
+    subscriptionAttributesCreatedAt :: Maybe UTCTime,
     -- | An 'ISO 8601' formatted date-time string indicating when the
     -- object was last updated.
-    subscriptionAttributesUpdatedAt :: UTCTime,
+    subscriptionAttributesUpdatedAt :: Maybe UTCTime,
     -- | A boolean indicating if the object was created within test mode.
-    subscriptionAttributesTestMode :: Bool
+    subscriptionAttributesTestMode :: Maybe Bool
   }
   deriving (Show, Eq, Generic)
 
 instance FromJSON SubscriptionAttributes where
-  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+  parseJSON =
+    genericParseJSON
+      $ (aesonDrop (length "SubscriptionAttributes") snakeCase)
+        { omitNothingFields = True
+        }
 
 instance ToJSON SubscriptionAttributes where
-  toJSON = genericToJSON $ aesonPrefix snakeCase
+  toJSON =
+    genericToJSON
+      $ (aesonDrop (length "SubscriptionAttributes") snakeCase)
+        { omitNothingFields = True
+        }
 
 instance Validity SubscriptionAttributes
 
 instance GenValid SubscriptionAttributes
+
+emptySubscription :: SubscriptionAttributes
+emptySubscription =
+  SubscriptionAttributes
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
+    Nothing
