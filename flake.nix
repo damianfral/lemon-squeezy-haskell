@@ -36,7 +36,15 @@
             final.lib.composeExtensions
             (old.overrides or (_: _: {}))
             (self: super: {
-              lemon-squeezy = self.callCabal2nix "lemon-squeezy" filteredSrc {};
+              lemon-squeezy = (self.callCabal2nix "lemon-squeezy" filteredSrc {})
+                .overrideAttrs (
+                old: {
+                  checkPhase = ''
+                    export LEMON_SQUEEZY_API_KEY=${builtins.getEnv "LEMON_SQUEEZY_API_KEY"}
+                    ${old.checkPhase}
+                  '';
+                }
+              );
             });
         });
       };

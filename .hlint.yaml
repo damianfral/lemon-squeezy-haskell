@@ -66,7 +66,7 @@
 
   # Functions involving division
   - {name: Prelude.quot, within: []} # Partial, see https://github.com/NorfairKing/haskell-WAT#num-int
-  - {name: Prelude.div, within: []}
+  - {name: Prelude.div, within: [LemonSqueezy.APISpec]}
   - {name: Prelude.rem, within: []}
   - {name: Prelude.mod, within: []}
   - {name: Prelude.quotRem, within: []}

@@ -11,15 +11,21 @@ dependencies:
   - base
   - bytestring
   - email-validate
+  - generic-lens
   - genvalidity
   - genvalidity-containers
   - genvalidity-text
   - genvalidity-time
+  - http-client
+  - http-client-tls
+  - http-media
   - optparse-applicative
   - optparse-generic
   - QuickCheck
   - relude
   - scientific
+  - servant
+  - servant-client
   - sydtest
   - text
   - time
@@ -50,6 +56,7 @@ tests:
     dependencies:
       - genvalidity-sydtest
       - genvalidity-sydtest-aeson
+      - lemon-squeezy
       - sydtest
       - sydtest-discover
-      - lemon-squeezy
+      - sydtest-wai
