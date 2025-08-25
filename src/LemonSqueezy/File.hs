@@ -36,7 +36,7 @@ data FileAttributes = FileAttributes
     -- | The human-readable size of the file (e.g. 5.5 MB).
     fileAttributesSizeFormatted :: Text,
     -- | The software version of this file (if one exists, e.g. 1.0.0).
-    fileAttributesVersion :: Text,
+    fileAttributesVersion :: Maybe Text,
     -- | An integer representing the order of this file when displayed.
     fileAttributesSort :: Int,
     -- | The status of the file.
