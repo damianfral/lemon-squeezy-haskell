@@ -35,6 +35,7 @@ import LemonSqueezy.Store (StoreAttributes)
 import LemonSqueezy.Subscription (SubscriptionAttributes)
 import LemonSqueezy.User (UserAttributes)
 import LemonSqueezy.Variant (VariantAttributes)
+import LemonSqueezy.Webhook (WebhookAttributes)
 import qualified Network.HTTP.Media as M
 import Relude hiding (Product)
 import Servant.API
@@ -137,6 +138,10 @@ type APIUsers = APIObjects "users" UserID UserAttributes
 type APIVariant = APIObject "variants" VariantID VariantAttributes
 
 type APIVariants = APIObjects "variants" VariantID VariantAttributes
+
+type APIWebhook = APIObject "webhooks" WebhookID WebhookAttributes
+
+type APIWebhooks = APIObjects "webhooks" WebhookID WebhookAttributes
 
 data Page = Page
   { pageCurrentPage :: Maybe Int,
@@ -260,6 +265,13 @@ type LemonSqueezyRUDLAPI (t :: Symbol) id a =
     :<|> LemonSqueezyDeleteAPI t id a
     :<|> LemonSqueezyListAPI t id a
 
+type LemonSqueezyCRUDLAPI (t :: Symbol) id a =
+  LemonSqueezyCreateAPI t id a
+    :<|> LemonSqueezyRetrieveAPI t id a
+    :<|> LemonSqueezyDeleteAPI t id a
+    :<|> LemonSqueezyUpdateAPI t id a
+    :<|> LemonSqueezyListAPI t id a
+
 type LemonSqueezyUsersAPI =
   LemonSqueezyAuth
     :> "v1"
@@ -303,6 +315,9 @@ type LemonSqueezySubscriptionsAPI =
 
 type LemonSqueezyCheckoutsAPI =
   LemonSqueezyCRLAPI "checkouts" CheckoutID CheckoutAttributes
+
+type LemonSqueezyWebhooksAPI =
+  LemonSqueezyCRUDLAPI "webhooks" WebhookID WebhookAttributes
 
 retrieveUser ::
   (MonadReaderAPIClient env m) =>
@@ -484,6 +499,40 @@ listCheckouts ::
   hoistClient p ntClientM $ client p
   where
     p = Proxy @LemonSqueezyCheckoutsAPI
+
+createWebhook ::
+  (MonadReaderAPIClient env m) =>
+  LemonSqueezyAPIKey ->
+  APIObject "webhooks" NoID WebhookAttributes ->
+  ExceptT ClientError m APIWebhook
+retrieveWebhook ::
+  (MonadReaderAPIClient env m) =>
+  LemonSqueezyAPIKey ->
+  WebhookID ->
+  ExceptT ClientError m APIWebhook
+updateWebhook ::
+  (MonadReaderAPIClient env m) =>
+  LemonSqueezyAPIKey ->
+  WebhookID ->
+  APIWebhook ->
+  ExceptT ClientError m APIWebhook
+deleteWebhook ::
+  (MonadReaderAPIClient env m) =>
+  LemonSqueezyAPIKey ->
+  WebhookID ->
+  ExceptT ClientError m APIWebhook
+listWebhooks ::
+  (MonadReaderAPIClient env m) =>
+  LemonSqueezyAPIKey ->
+  ExceptT ClientError m APIWebhooks
+( createWebhook
+    :<|> retrieveWebhook
+    :<|> deleteWebhook
+    :<|> updateWebhook
+    :<|> listWebhooks
+  ) = hoistClient p ntClientM $ client p
+    where
+      p = Proxy @LemonSqueezyWebhooksAPI
 
 newtype APIClientEnv = APIClientEnv {clientEnv :: ClientEnv} deriving (Generic)
 

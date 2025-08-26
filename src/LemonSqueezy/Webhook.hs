@@ -69,33 +69,45 @@ type Webhook = LS.Object "webhooks" WebhookID WebhookAttributes
 
 data WebhookAttributes = WebhookAttributes
   { -- | The ID of the store this webhook belongs to.
-    webhookAttributesStoreId :: Int,
+    webhookAttributesStoreId :: Maybe Int,
     -- | The URL that events will be sent to.
-    webhookAttributesUrl :: Text,
+    webhookAttributesUrl :: Maybe Text,
     -- | An array of events that will be sent.
-    webhookAttributesEvents :: [WebhookEvent],
+    webhookAttributesEvents :: Maybe [WebhookEvent],
     -- | An 'ISO 8601' formatted date-time string indicating when the
     -- last webhook event was sent. Will be `null` if no events have been
     -- sent yet.
+    webhookAttributesSecret :: Maybe Text,
     webhookAttributesLastSentAt :: Maybe UTCTime,
     -- | An 'ISO 8601' formatted date-time string indicating when the
     -- object was created.
-    webhookAttributesCreatedAt :: UTCTime,
+    webhookAttributesCreatedAt :: Maybe UTCTime,
     -- | An 'ISO 8601' formatted date-time string indicating when the
     -- object was last updated.
-    webhookAttributesUpdatedAt :: UTCTime,
+    webhookAttributesUpdatedAt :: Maybe UTCTime,
     -- | A boolean indicating if the object was created within test mode.
-    webhookAttributesTestMode :: Bool
+    webhookAttributesTestMode :: Maybe Bool
   }
   deriving (Show, Eq, Generic)
 
 instance FromJSON WebhookAttributes where
   parseJSON =
-    genericParseJSON $ aesonDrop (length "WebhookAttributes") snakeCase
+    genericParseJSON
+      $ (aesonDrop (length "WebhookAttributes") snakeCase)
+        { omitNothingFields = True
+        }
 
 instance ToJSON WebhookAttributes where
-  toJSON = genericToJSON $ aesonDrop (length "WebhookAttributes") snakeCase
+  toJSON =
+    genericToJSON
+      $ (aesonDrop (length "WebhookAttributes") snakeCase)
+        { omitNothingFields = True
+        }
 
 instance Validity WebhookAttributes
 
 instance GenValid WebhookAttributes
+
+emptyWebhook :: WebhookAttributes
+emptyWebhook =
+  WebhookAttributes Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing

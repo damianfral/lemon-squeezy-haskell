@@ -14,6 +14,7 @@ import LemonSqueezy.Checkout
 import LemonSqueezy.Customer
 import qualified LemonSqueezy.Object as LS
 import LemonSqueezy.Subscription
+import LemonSqueezy.Webhook
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (newTlsManager)
 import Relude
@@ -59,6 +60,7 @@ apiSpec = describe "LemonSqueezy API" $ makeServerSpec $ do
   subscriptionsAPISpec
   usersAPISpec
   variantsAPISpec
+  webhooksAPISpec
 
 usersAPISpec :: TestDefM outers APIClientEnv ()
 usersAPISpec = describe "Users" $ do
@@ -393,3 +395,69 @@ checkoutsAPISpec = describe "Checkouts" $ do
     Right (APIObjects _ _ _ checkouts) <- pure listRes
     let checkoutIds = mapMaybe LS.objectId checkouts
     checkoutID `shouldSatisfy` (`elem` checkoutIds)
+
+webhooksAPISpec :: TestDefM outers APIClientEnv ()
+webhooksAPISpec = describe "Webhooks" $ do
+  it "can list, retrieve, and update webhooks" $ \apiClientEnv -> do
+    apiKey <- getAPIKey
+    storesRes <- runAPI apiClientEnv $ listStores apiKey
+    storesRes `shouldSatisfy` isRight
+    Right stores <- pure storesRes
+    storeID <- case stores of
+      (APIObjects _ _ _ ((LS.Object {LS.objectId = Just storeID}) : _)) ->
+        pure storeID
+      (APIObjects {}) -> fail "No stores found"
+    let webhookAttributes =
+          emptyWebhook
+            { webhookAttributesUrl = Just "https://example.com/new-webhook-url",
+              webhookAttributesEvents = Just [OrderCreated],
+              webhookAttributesSecret = Just "test-secret"
+            }
+    let rels = LS.Relationships $ fromList [LS.RelationshipStore storeID]
+    let webhookToCreate =
+          APIObject
+            Nothing
+            Nothing
+            Nothing
+            ( LS.Object
+                { LS.objectId = Nothing, -- Will be ignored by the API
+                  LS.objectAttributes = Just webhookAttributes,
+                  LS.objectRelationships = Just rels
+                }
+            )
+    createRes <- runAPI apiClientEnv $ createWebhook apiKey webhookToCreate
+    createRes `shouldSatisfy` isRight
+
+    -- List webhooks
+    listRes <- runAPI apiClientEnv $ listWebhooks apiKey
+    listRes `shouldSatisfy` isRight
+    Right (APIObjects _ _ _ webhooks) <- pure listRes
+    forM_ webhooks $ \webhook ->
+      LS.objectId webhook `shouldSatisfy` isJust
+    case listToMaybe webhooks of
+      Just (LS.Object {LS.objectId = Just webhookID}) -> do
+        -- Retrieve a webhook
+        retrieveRes <- runAPI apiClientEnv $ retrieveWebhook apiKey webhookID
+        retrieveRes `shouldSatisfy` isRight
+        Right retrievedWebhook <- pure retrieveRes
+        -- (LS.Object {LS.objectAttributes = Just retrievedAttrs}) <- pure obj
+        LS.objectId (apiObjectData retrievedWebhook) `shouldBe` Just webhookID
+
+        -- Update a webhook
+        let newUrl = "https://example.com/a-new-webhook-url"
+        let updatedAttrs =
+              emptyWebhook
+                { webhookAttributesUrl = Just newUrl
+                }
+        let webhookToUpdate =
+              (apiObjectData retrievedWebhook)
+                { LS.objectAttributes = Just updatedAttrs
+                }
+        let updatePayload = APIObject Nothing Nothing Nothing webhookToUpdate
+        let updateWebhookAction = updateWebhook apiKey webhookID updatePayload
+        updateRes <- runAPI apiClientEnv updateWebhookAction
+        updateRes `shouldSatisfy` isRight
+        Right (APIObject _ _ _ obj'') <- pure updateRes
+        (LS.Object {LS.objectAttributes = Just newAttrs}) <- pure obj''
+        webhookAttributesUrl newAttrs `shouldBe` Just newUrl
+      _ -> expectationFailure "No webhooks found"
