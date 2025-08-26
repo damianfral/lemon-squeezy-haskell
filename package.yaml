@@ -30,6 +30,14 @@ dependencies:
   - text
   - time
   - url
+  - case-insensitive
+  - cryptonite
+  - http-types
+  - memory
+  - servant-server
+  - wai
+  - warp
+  - vault
 
 library:
   source-dirs: ./src/
