@@ -52,9 +52,9 @@ type Checkout = LS.Object "checkouts" CheckoutID CheckoutAttributes
 -- | Checkout creation request
 data CheckoutAttributes = CheckoutAttributes
   { -- | The ID of the store this checkout belongs to.
-    checkoutAttributesStoreId :: StoreID,
-    -- | The ID of the variant associated with this checkout.
-    checkoutAttributesVariantId :: VariantID,
+    -- checkoutAttributesStoreId :: StoreID,
+    -- -- | The ID of the variant associated with this checkout.
+    -- checkoutAttributesVariantId :: VariantID,
     -- | A pre-filled email address.
     checkoutAttributesEmail :: Maybe Text,
     -- | A positive integer in cents representing the custom price of the variant.
@@ -66,11 +66,17 @@ data CheckoutAttributes = CheckoutAttributes
 
 instance FromJSON CheckoutAttributes where
   parseJSON =
-    genericParseJSON $ aesonDrop (length "CheckoutAttributes") snakeCase
+    genericParseJSON
+      $ (aesonDrop (length "CheckoutAttributes") snakeCase)
+        { omitNothingFields = True
+        }
 
 instance ToJSON CheckoutAttributes where
   toJSON =
-    genericToJSON $ aesonDrop (length "CheckoutAttributes") snakeCase
+    genericToJSON
+      $ (aesonDrop (length "CheckoutAttributes") snakeCase)
+        { omitNothingFields = True
+        }
 
 instance Validity CheckoutAttributes
 

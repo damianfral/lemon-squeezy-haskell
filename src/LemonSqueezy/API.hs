@@ -200,12 +200,14 @@ instance ToHttpApiData LemonSqueezyAPIKey where
 
 type LemonSqueezyAuth = Header' '[Required] "Authorization" LemonSqueezyAPIKey
 
+type Post201 contentTypes a = Verb 'POST 201 contentTypes a
+
 type LemonSqueezyCreateAPI (t :: Symbol) id a =
   LemonSqueezyAuth
     :> "v1"
     :> t
     :> ReqBody '[JSONAPI] (APIObject t NoID a)
-    :> Post '[JSONAPI] (APIObject t id a)
+    :> Post201 '[JSONAPI] (APIObject t id a)
 
 type LemonSqueezyRetrieveAPI (t :: Symbol) id a =
   LemonSqueezyAuth
