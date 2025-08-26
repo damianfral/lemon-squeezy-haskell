@@ -77,14 +77,15 @@ storesAPISpec = describe "Stores" $ do
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ stores) <- pure listRes
     forM_ stores $ \store -> LS.objectId store `shouldSatisfy` isJust
-    case listToMaybe stores of
-      Just (LS.Object {LS.objectId = Just storeID}) -> do
-        -- Retrieve a store
-        retrieveRes <- runAPI apiClientEnv $ retrieveStore apiKey storeID
-        retrieveRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ store) <- pure retrieveRes
-        LS.objectId store `shouldBe` Just storeID
+
+    storeID <- case listToMaybe stores of
+      Just (LS.Object {LS.objectId = Just storeID}) -> pure storeID
       _ -> expectationFailure "No stores found"
+    -- Retrieve a store
+    retrieveRes <- runAPI apiClientEnv $ retrieveStore apiKey storeID
+    retrieveRes `shouldSatisfy` isRight
+    Right (APIObject _ _ _ store) <- pure retrieveRes
+    LS.objectId store `shouldBe` Just storeID
 
 productsAPISpec :: TestDefM outers APIClientEnv ()
 productsAPISpec = describe "Products" $ do
@@ -95,14 +96,16 @@ productsAPISpec = describe "Products" $ do
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ products) <- pure listRes
     forM_ products $ \p -> LS.objectId p `shouldSatisfy` isJust
-    case listToMaybe products of
-      Just (LS.Object {LS.objectId = Just productID}) -> do
-        -- Retrieve a product
-        retrieveRes <- runAPI apiClientEnv $ retrieveProduct apiKey productID
-        retrieveRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ p) <- pure retrieveRes
-        LS.objectId p `shouldBe` Just productID
+
+    productID <- case listToMaybe products of
+      Just (LS.Object {LS.objectId = Just productID}) -> pure productID
       _ -> expectationFailure "No products found"
+
+    -- Retrieve a product
+    retrieveRes <- runAPI apiClientEnv $ retrieveProduct apiKey productID
+    retrieveRes `shouldSatisfy` isRight
+    Right (APIObject _ _ _ p) <- pure retrieveRes
+    LS.objectId p `shouldBe` Just productID
 
 variantsAPISpec :: TestDefM outers APIClientEnv ()
 variantsAPISpec = describe "Variants" $ do
@@ -113,14 +116,16 @@ variantsAPISpec = describe "Variants" $ do
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ variants) <- pure listRes
     forM_ variants $ \variant -> LS.objectId variant `shouldSatisfy` isJust
-    case listToMaybe variants of
-      Just (LS.Object {LS.objectId = Just variantID}) -> do
-        -- Retrieve a variant
-        retrieveRes <- runAPI apiClientEnv $ retrieveVariant apiKey variantID
-        retrieveRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ variant) <- pure retrieveRes
-        LS.objectId variant `shouldBe` Just variantID
+
+    variantID <- case listToMaybe variants of
+      Just (LS.Object {LS.objectId = Just variantID}) -> pure variantID
       _ -> expectationFailure "No variants found"
+
+    -- Retrieve a variant
+    retrieveRes <- runAPI apiClientEnv $ retrieveVariant apiKey variantID
+    retrieveRes `shouldSatisfy` isRight
+    Right (APIObject _ _ _ variant) <- pure retrieveRes
+    LS.objectId variant `shouldBe` Just variantID
 
 pricesAPISpec :: TestDefM outers APIClientEnv ()
 pricesAPISpec = describe "Prices" $ do
@@ -131,14 +136,16 @@ pricesAPISpec = describe "Prices" $ do
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ prices) <- pure listRes
     forM_ prices $ \price -> LS.objectId price `shouldSatisfy` isJust
-    case listToMaybe prices of
-      Just (LS.Object {LS.objectId = Just priceID}) -> do
-        -- Retrieve a price
-        retrieveRes <- runAPI apiClientEnv $ retrievePrice apiKey priceID
-        retrieveRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ price) <- pure retrieveRes
-        LS.objectId price `shouldBe` Just priceID
+
+    priceID <- case listToMaybe prices of
+      Just (LS.Object {LS.objectId = Just priceID}) -> pure priceID
       _ -> expectationFailure "No prices found"
+
+    -- Retrieve a price
+    retrieveRes <- runAPI apiClientEnv $ retrievePrice apiKey priceID
+    retrieveRes `shouldSatisfy` isRight
+    Right (APIObject _ _ _ price) <- pure retrieveRes
+    LS.objectId price `shouldBe` Just priceID
 
 ordersAPISpec :: TestDefM outers APIClientEnv ()
 ordersAPISpec = describe "Orders" $ do
@@ -149,14 +156,16 @@ ordersAPISpec = describe "Orders" $ do
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ orders) <- pure listRes
     forM_ orders $ \order -> LS.objectId order `shouldSatisfy` isJust
-    case listToMaybe orders of
-      Just (LS.Object {LS.objectId = Just orderID}) -> do
-        -- Retrieve an order
-        retrieveRes <- runAPI apiClientEnv $ retrieveOrder apiKey orderID
-        retrieveRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ order) <- pure retrieveRes
-        LS.objectId order `shouldBe` Just orderID
+
+    orderID <- case listToMaybe orders of
+      Just (LS.Object {LS.objectId = Just orderID}) -> pure orderID
       _ -> expectationFailure "No orders found"
+
+    -- Retrieve an order
+    retrieveRes <- runAPI apiClientEnv $ retrieveOrder apiKey orderID
+    retrieveRes `shouldSatisfy` isRight
+    Right (APIObject _ _ _ order) <- pure retrieveRes
+    LS.objectId order `shouldBe` Just orderID
 
 orderItemsAPISpec :: TestDefM outers APIClientEnv ()
 orderItemsAPISpec = describe "OrderItems" $ do
@@ -167,15 +176,17 @@ orderItemsAPISpec = describe "OrderItems" $ do
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ orderItems) <- pure listRes
     forM_ orderItems $ \orderItem -> LS.objectId orderItem `shouldSatisfy` isJust
-    case listToMaybe orderItems of
-      Just (LS.Object {LS.objectId = Just orderItemID}) -> do
-        -- Retrieve an order item
-        retrieveRes <-
-          runAPI apiClientEnv $ retrieveOrderItem apiKey orderItemID
-        retrieveRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ orderItem) <- pure retrieveRes
-        LS.objectId orderItem `shouldBe` Just orderItemID
+
+    orderItemID <- case listToMaybe orderItems of
+      Just (LS.Object {LS.objectId = Just orderItemID}) -> pure orderItemID
       _ -> expectationFailure "No order items found"
+
+    -- Retrieve an order item
+    retrieveRes <-
+      runAPI apiClientEnv $ retrieveOrderItem apiKey orderItemID
+    retrieveRes `shouldSatisfy` isRight
+    Right (APIObject _ _ _ orderItem) <- pure retrieveRes
+    LS.objectId orderItem `shouldBe` Just orderItemID
 
 subscriptionsAPISpec :: TestDefM outers APIClientEnv ()
 subscriptionsAPISpec = describe "Subscriptions" $ do
@@ -187,50 +198,19 @@ subscriptionsAPISpec = describe "Subscriptions" $ do
     Right (APIObjects _ _ _ subscriptions) <- pure listRes
     forM_ subscriptions $ \subscription ->
       LS.objectId subscription `shouldSatisfy` isJust
-    case listToMaybe subscriptions of
-      Just (LS.Object {LS.objectId = Just subscriptionID}) -> do
-        -- Retrieve a subscription
-        retrieveRes <-
-          runAPI apiClientEnv $ retrieveSubscription apiKey subscriptionID
-        retrieveRes `shouldSatisfy` isRight
-        Right retrievedSubscription <- pure retrieveRes
-        -- (LS.Object {LS.objectAttributes = Just retrievedAttrs}) <- pure obj
-        LS.objectId (apiObjectData retrievedSubscription)
-          `shouldBe` Just subscriptionID
 
-      -- -- Update a subscription
-      -- let currentBillingAnchor =
-      --       subscriptionAttributesBillingAnchor retrievedAttrs
-      -- let newBillingAnchor =
-      --       if currentBillingAnchor >= Just 28
-      --         then Just 1
-      --         else (+ 1) <$> currentBillingAnchor
-      -- let updatedAttrs =
-      --       emptySubscription
-      --         { subscriptionAttributesBillingAnchor = newBillingAnchor
-      --         }
-      -- let subscriptionToUpdate =
-      --       (apiObjectData retrievedSubscription)
-      --         { LS.objectAttributes = Just updatedAttrs
-      --         }
-      -- let updatePayload = APIObject Nothing Nothing Nothing subscriptionToUpdate
-      -- let updateSubscriptionAction =
-      --       updateSubscription apiKey subscriptionID updatePayload
-      -- updateRes <- runAPI apiClientEnv updateSubscriptionAction
-      -- updateRes `shouldSatisfy` isRight
-      -- Right (APIObject _ _ _ obj'') <- pure updateRes
-      -- (LS.Object {LS.objectAttributes = Just newAttrs}) <- pure obj''
-      -- subscriptionAttributesBillingAnchor newAttrs `shouldBe` newBillingAnchor
-
-      -- Cancel a subscription
-      -- -- WARNING: This is a destructive action.
-      -- cancelRes <-
-      --   runAPI apiClientEnv $ cancelSubscription apiKey subscriptionID
-      -- cancelRes `shouldSatisfy` isRight
-      -- Right (APIObject _ _ _ obj''') <- pure cancelRes
-      -- (LS.Object {LS.objectAttributes = Just cancelledAttrs}) <- pure obj'''
-      -- subscriptionAttributesCancelled cancelledAttrs `shouldBe` True
+    subscriptionID <- case listToMaybe subscriptions of
+      Just (LS.Object {LS.objectId = Just subscriptionID}) -> pure subscriptionID
       _ -> expectationFailure "No active subscriptions found"
+
+    -- Retrieve a subscription
+    retrieveRes <-
+      runAPI apiClientEnv $ retrieveSubscription apiKey subscriptionID
+    retrieveRes `shouldSatisfy` isRight
+    Right retrievedSubscription <- pure retrieveRes
+    -- (LS.Object {LS.objectAttributes = Just retrievedAttrs}) <- pure obj
+    LS.objectId (apiObjectData retrievedSubscription)
+      `shouldBe` Just subscriptionID
 
 filesAPISpec :: TestDefM outers APIClientEnv ()
 filesAPISpec = describe "Files" $ do
@@ -241,14 +221,16 @@ filesAPISpec = describe "Files" $ do
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ files) <- pure listRes
     forM_ files $ \file -> LS.objectId file `shouldSatisfy` isJust
-    case listToMaybe files of
-      Just (LS.Object {LS.objectId = Just fileID}) -> do
-        -- Retrieve a file
-        retrieveRes <- runAPI apiClientEnv $ retrieveFile apiKey fileID
-        retrieveRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ file) <- pure retrieveRes
-        LS.objectId file `shouldBe` Just fileID
+
+    fileID <- case listToMaybe files of
+      Just (LS.Object {LS.objectId = Just fileID}) -> pure fileID
       _ -> expectationFailure "No files found"
+
+    -- Retrieve a file
+    retrieveRes <- runAPI apiClientEnv $ retrieveFile apiKey fileID
+    retrieveRes `shouldSatisfy` isRight
+    Right (APIObject _ _ _ file) <- pure retrieveRes
+    LS.objectId file `shouldBe` Just fileID
 
 customersAPISpec :: TestDefM outers APIClientEnv ()
 customersAPISpec = describe "Customers" $ do
@@ -258,9 +240,9 @@ customersAPISpec = describe "Customers" $ do
     storesRes `shouldSatisfy` isRight
     Right stores <- pure storesRes
     storeID <- case stores of
-      (APIObjects _ _ _ ((LS.Object {LS.objectId = Just storeID}) : _)) ->
+      APIObjects _ _ _ ((LS.Object {LS.objectId = Just storeID}) : _) ->
         pure storeID
-      (APIObjects {}) -> fail "No stores found"
+      APIObjects {} -> fail "No stores found"
 
     -- Create
     now <- getCurrentTime
@@ -287,17 +269,13 @@ customersAPISpec = describe "Customers" $ do
               customerAttributesTestMode = True
             }
     let rels = LS.Relationships $ fromList [LS.RelationshipStore storeID]
-    let customerToCreate =
-          APIObject
-            Nothing
-            Nothing
-            Nothing
-            ( LS.Object
-                { LS.objectId = Nothing, -- Will be ignored by the API
-                  LS.objectAttributes = Just customerAttrs,
-                  LS.objectRelationships = Just rels
-                }
-            )
+    let customerObject =
+          LS.Object
+            { LS.objectId = Nothing, -- Will be ignored by the API
+              LS.objectAttributes = Just customerAttrs,
+              LS.objectRelationships = Just rels
+            }
+    let customerToCreate = APIObject Nothing Nothing Nothing customerObject
     createdCustomerRes <-
       runAPI apiClientEnv $ createCustomer apiKey customerToCreate
     createdCustomerRes `shouldSatisfy` isRight
@@ -350,7 +328,7 @@ checkoutsAPISpec = describe "Checkouts" $ do
     storeID <- case stores of
       (APIObjects _ _ _ (LS.Object {LS.objectId = Just storeID} : _)) ->
         pure storeID
-      (APIObjects {}) -> fail "No stores found"
+      _ -> fail "No stores found"
 
     -- Get a variant
     Right variants <- runAPI apiClientEnv $ listVariants apiKey
@@ -413,17 +391,13 @@ webhooksAPISpec = describe "Webhooks" $ do
               webhookAttributesSecret = Just "test-secret"
             }
     let rels = LS.Relationships $ fromList [LS.RelationshipStore storeID]
-    let webhookToCreate =
-          APIObject
-            Nothing
-            Nothing
-            Nothing
-            ( LS.Object
-                { LS.objectId = Nothing, -- Will be ignored by the API
-                  LS.objectAttributes = Just webhookAttributes,
-                  LS.objectRelationships = Just rels
-                }
-            )
+    let webhookObject =
+          LS.Object
+            { LS.objectId = Nothing, -- Will be ignored by the API
+              LS.objectAttributes = Just webhookAttributes,
+              LS.objectRelationships = Just rels
+            }
+    let webhookToCreate = APIObject Nothing Nothing Nothing webhookObject
     createRes <- runAPI apiClientEnv $ createWebhook apiKey webhookToCreate
     createRes `shouldSatisfy` isRight
 
@@ -433,30 +407,27 @@ webhooksAPISpec = describe "Webhooks" $ do
     Right (APIObjects _ _ _ webhooks) <- pure listRes
     forM_ webhooks $ \webhook ->
       LS.objectId webhook `shouldSatisfy` isJust
-    case listToMaybe webhooks of
-      Just (LS.Object {LS.objectId = Just webhookID}) -> do
-        -- Retrieve a webhook
-        retrieveRes <- runAPI apiClientEnv $ retrieveWebhook apiKey webhookID
-        retrieveRes `shouldSatisfy` isRight
-        Right retrievedWebhook <- pure retrieveRes
-        -- (LS.Object {LS.objectAttributes = Just retrievedAttrs}) <- pure obj
-        LS.objectId (apiObjectData retrievedWebhook) `shouldBe` Just webhookID
-
-        -- Update a webhook
-        let newUrl = "https://example.com/a-new-webhook-url"
-        let updatedAttrs =
-              emptyWebhook
-                { webhookAttributesUrl = Just newUrl
-                }
-        let webhookToUpdate =
-              (apiObjectData retrievedWebhook)
-                { LS.objectAttributes = Just updatedAttrs
-                }
-        let updatePayload = APIObject Nothing Nothing Nothing webhookToUpdate
-        let updateWebhookAction = updateWebhook apiKey webhookID updatePayload
-        updateRes <- runAPI apiClientEnv updateWebhookAction
-        updateRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ obj'') <- pure updateRes
-        (LS.Object {LS.objectAttributes = Just newAttrs}) <- pure obj''
-        webhookAttributesUrl newAttrs `shouldBe` Just newUrl
+    webhookID <- case listToMaybe webhooks of
+      Just (LS.Object {LS.objectId = Just webhookID}) -> pure webhookID
       _ -> expectationFailure "No webhooks found"
+
+    -- Retrieve a webhook
+    retrieveRes <- runAPI apiClientEnv $ retrieveWebhook apiKey webhookID
+    retrieveRes `shouldSatisfy` isRight
+    Right retrievedWebhook <- pure retrieveRes
+    LS.objectId (apiObjectData retrievedWebhook) `shouldBe` Just webhookID
+
+    -- Update a webhook
+    let newUrl = "https://example.com/a-new-webhook-url"
+    let updatedAttrs = emptyWebhook {webhookAttributesUrl = Just newUrl}
+    let webhookToUpdate =
+          (apiObjectData retrievedWebhook)
+            { LS.objectAttributes = Just updatedAttrs
+            }
+    let updatePayload = APIObject Nothing Nothing Nothing webhookToUpdate
+    let updateWebhookAction = updateWebhook apiKey webhookID updatePayload
+    updateRes <- runAPI apiClientEnv updateWebhookAction
+    updateRes `shouldSatisfy` isRight
+    Right (APIObject _ _ _ obj'') <- pure updateRes
+    (LS.Object {LS.objectAttributes = Just newAttrs}) <- pure obj''
+    webhookAttributesUrl newAttrs `shouldBe` Just newUrl
