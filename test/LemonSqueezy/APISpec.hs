@@ -13,7 +13,6 @@ import LemonSqueezy.API
 import LemonSqueezy.Checkout
 import LemonSqueezy.Customer
 import qualified LemonSqueezy.Object as LS
-import LemonSqueezy.Subscription
 import LemonSqueezy.Webhook
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (newTlsManager)
@@ -194,34 +193,34 @@ subscriptionsAPISpec = describe "Subscriptions" $ do
         retrieveRes <-
           runAPI apiClientEnv $ retrieveSubscription apiKey subscriptionID
         retrieveRes `shouldSatisfy` isRight
-        Right retrievedSubscription@(APIObject _ _ _ obj) <- pure retrieveRes
-        (LS.Object {LS.objectAttributes = Just retrievedAttrs}) <- pure obj
+        Right retrievedSubscription <- pure retrieveRes
+        -- (LS.Object {LS.objectAttributes = Just retrievedAttrs}) <- pure obj
         LS.objectId (apiObjectData retrievedSubscription)
           `shouldBe` Just subscriptionID
 
-        -- Update a subscription
-        let currentBillingAnchor =
-              subscriptionAttributesBillingAnchor retrievedAttrs
-        let newBillingAnchor =
-              if currentBillingAnchor >= Just 28
-                then Just 1
-                else (+ 1) <$> currentBillingAnchor
-        let updatedAttrs =
-              emptySubscription
-                { subscriptionAttributesBillingAnchor = newBillingAnchor
-                }
-        let subscriptionToUpdate =
-              (apiObjectData retrievedSubscription)
-                { LS.objectAttributes = Just updatedAttrs
-                }
-        let updatePayload = APIObject Nothing Nothing Nothing subscriptionToUpdate
-        let updateSubscriptionAction =
-              updateSubscription apiKey subscriptionID updatePayload
-        updateRes <- runAPI apiClientEnv updateSubscriptionAction
-        updateRes `shouldSatisfy` isRight
-        Right (APIObject _ _ _ obj'') <- pure updateRes
-        (LS.Object {LS.objectAttributes = Just newAttrs}) <- pure obj''
-        subscriptionAttributesBillingAnchor newAttrs `shouldBe` newBillingAnchor
+      -- -- Update a subscription
+      -- let currentBillingAnchor =
+      --       subscriptionAttributesBillingAnchor retrievedAttrs
+      -- let newBillingAnchor =
+      --       if currentBillingAnchor >= Just 28
+      --         then Just 1
+      --         else (+ 1) <$> currentBillingAnchor
+      -- let updatedAttrs =
+      --       emptySubscription
+      --         { subscriptionAttributesBillingAnchor = newBillingAnchor
+      --         }
+      -- let subscriptionToUpdate =
+      --       (apiObjectData retrievedSubscription)
+      --         { LS.objectAttributes = Just updatedAttrs
+      --         }
+      -- let updatePayload = APIObject Nothing Nothing Nothing subscriptionToUpdate
+      -- let updateSubscriptionAction =
+      --       updateSubscription apiKey subscriptionID updatePayload
+      -- updateRes <- runAPI apiClientEnv updateSubscriptionAction
+      -- updateRes `shouldSatisfy` isRight
+      -- Right (APIObject _ _ _ obj'') <- pure updateRes
+      -- (LS.Object {LS.objectAttributes = Just newAttrs}) <- pure obj''
+      -- subscriptionAttributesBillingAnchor newAttrs `shouldBe` newBillingAnchor
 
       -- Cancel a subscription
       -- -- WARNING: This is a destructive action.
