@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module LemonSqueezy.Webhook where
@@ -8,6 +9,7 @@ module LemonSqueezy.Webhook where
 import Data.Aeson
 import Data.Aeson.Casing (aesonDrop, snakeCase)
 import Data.GenValidity
+import Data.GenValidity.Containers ()
 import Data.GenValidity.Text ()
 import Data.GenValidity.Time ()
 import Data.Time (UTCTime)
@@ -67,6 +69,14 @@ instance GenValid WebhookEvent
 -- https://docs.lemonsqueezy.com/api/webhooks/the-webhook-object
 type Webhook = LS.Object "webhooks" WebhookID WebhookAttributes
 
+newtype WebhookSecret = WebhookSecret {unWebhookSecret :: Text}
+  deriving (Show, Eq, Generic)
+  deriving newtype (FromJSON, ToJSON)
+
+instance Validity WebhookSecret
+
+instance GenValid WebhookSecret
+
 data WebhookAttributes = WebhookAttributes
   { -- | The ID of the store this webhook belongs to.
     webhookAttributesStoreId :: Maybe Int,
@@ -74,10 +84,11 @@ data WebhookAttributes = WebhookAttributes
     webhookAttributesUrl :: Maybe Text,
     -- | An array of events that will be sent.
     webhookAttributesEvents :: Maybe [WebhookEvent],
+    -- | A string used by Lemon Squeezy to sign requests for increased security.
+    webhookAttributesSecret :: Maybe WebhookSecret,
     -- | An 'ISO 8601' formatted date-time string indicating when the
     -- last webhook event was sent. Will be `null` if no events have been
     -- sent yet.
-    webhookAttributesSecret :: Maybe Text,
     webhookAttributesLastSentAt :: Maybe UTCTime,
     -- | An 'ISO 8601' formatted date-time string indicating when the
     -- object was created.

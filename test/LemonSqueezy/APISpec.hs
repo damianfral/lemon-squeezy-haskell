@@ -388,7 +388,7 @@ webhooksAPISpec = describe "Webhooks" $ do
           emptyWebhook
             { webhookAttributesUrl = Just "https://example.com/new-webhook-url",
               webhookAttributesEvents = Just [OrderCreated],
-              webhookAttributesSecret = Just "test-secret"
+              webhookAttributesSecret = Just $ WebhookSecret "test-secret"
             }
     let rels = LS.Relationships $ fromList [LS.RelationshipStore storeID]
     let webhookObject =
