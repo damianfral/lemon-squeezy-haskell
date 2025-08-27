@@ -73,7 +73,7 @@ storesAPISpec = describe "Stores" $ do
   it "can list and retrieve stores" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- List stores
-    listRes <- runAPI apiClientEnv $ listStores apiKey
+    listRes <- runAPI apiClientEnv $ listStores apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ stores) <- pure listRes
     forM_ stores $ \store -> LS.objectId store `shouldSatisfy` isJust
@@ -87,12 +87,20 @@ storesAPISpec = describe "Stores" $ do
     Right (APIObject _ _ _ store) <- pure retrieveRes
     LS.objectId store `shouldBe` Just storeID
 
+  it "can list stores with pagination" $ \apiClientEnv -> do
+    apiKey <- getAPIKey
+    -- List stores with page size 1
+    listRes <- runAPI apiClientEnv $ listStores apiKey (Just (PageNumber 1)) (Just (PageSize 1))
+    listRes `shouldSatisfy` isRight
+    Right (APIObjects _ _ _ stores) <- pure listRes
+    length stores `shouldSatisfy` (<= 1)
+
 productsAPISpec :: TestDefM outers APIClientEnv ()
 productsAPISpec = describe "Products" $ do
   it "can list and retrieve products" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- List products
-    listRes <- runAPI apiClientEnv $ listProducts apiKey
+    listRes <- runAPI apiClientEnv $ listProducts apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ products) <- pure listRes
     forM_ products $ \p -> LS.objectId p `shouldSatisfy` isJust
@@ -112,7 +120,7 @@ variantsAPISpec = describe "Variants" $ do
   it "can list and retrieve variants" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- List variants
-    listRes <- runAPI apiClientEnv $ listVariants apiKey
+    listRes <- runAPI apiClientEnv $ listVariants apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ variants) <- pure listRes
     forM_ variants $ \variant -> LS.objectId variant `shouldSatisfy` isJust
@@ -132,7 +140,7 @@ pricesAPISpec = describe "Prices" $ do
   it "can list and retrieve prices" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- List prices
-    listRes <- runAPI apiClientEnv $ listPrices apiKey
+    listRes <- runAPI apiClientEnv $ listPrices apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ prices) <- pure listRes
     forM_ prices $ \price -> LS.objectId price `shouldSatisfy` isJust
@@ -152,7 +160,7 @@ ordersAPISpec = describe "Orders" $ do
   it "can list and retrieve orders" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- List orders
-    listRes <- runAPI apiClientEnv $ listOrders apiKey
+    listRes <- runAPI apiClientEnv $ listOrders apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ orders) <- pure listRes
     forM_ orders $ \order -> LS.objectId order `shouldSatisfy` isJust
@@ -172,7 +180,7 @@ orderItemsAPISpec = describe "OrderItems" $ do
   it "can list and retrieve order items" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- List order items
-    listRes <- runAPI apiClientEnv $ listOrderItems apiKey
+    listRes <- runAPI apiClientEnv $ listOrderItems apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ orderItems) <- pure listRes
     forM_ orderItems $ \orderItem -> LS.objectId orderItem `shouldSatisfy` isJust
@@ -193,7 +201,7 @@ subscriptionsAPISpec = describe "Subscriptions" $ do
   it "can list, retrieve, update, and cancel subscriptions" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- List subscriptions
-    listRes <- runAPI apiClientEnv $ listSubscriptions apiKey
+    listRes <- runAPI apiClientEnv $ listSubscriptions apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ subscriptions) <- pure listRes
     forM_ subscriptions $ \subscription ->
@@ -217,7 +225,7 @@ filesAPISpec = describe "Files" $ do
   it "can list and retrieve files" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- List files
-    listRes <- runAPI apiClientEnv $ listFiles apiKey
+    listRes <- runAPI apiClientEnv $ listFiles apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ files) <- pure listRes
     forM_ files $ \file -> LS.objectId file `shouldSatisfy` isJust
@@ -236,7 +244,7 @@ customersAPISpec :: TestDefM outers APIClientEnv ()
 customersAPISpec = describe "Customers" $ do
   it "can create, retrieve, update and list customers" $ \apiClientEnv -> do
     apiKey <- getAPIKey
-    storesRes <- runAPI apiClientEnv $ listStores apiKey
+    storesRes <- runAPI apiClientEnv $ listStores apiKey Nothing Nothing
     storesRes `shouldSatisfy` isRight
     Right stores <- pure storesRes
     storeID <- case stores of
@@ -313,7 +321,7 @@ customersAPISpec = describe "Customers" $ do
 
     -- List
     Right (APIObjects _ _ _ customers) <-
-      runAPI apiClientEnv $ listCustomers apiKey
+      runAPI apiClientEnv $ listCustomers apiKey Nothing Nothing
     let customerIds = LS.objectId <$> customers
     let APIObject _ _ _ (LS.Object {LS.objectId = createdCustomerId}) =
           createdCustomer
@@ -324,14 +332,14 @@ checkoutsAPISpec = describe "Checkouts" $ do
   it "can create, retrieve and list checkouts" $ \apiClientEnv -> do
     apiKey <- getAPIKey
     -- Get a store
-    Right stores <- runAPI apiClientEnv $ listStores apiKey
+    Right stores <- runAPI apiClientEnv $ listStores apiKey Nothing Nothing
     storeID <- case stores of
       (APIObjects _ _ _ (LS.Object {LS.objectId = Just storeID} : _)) ->
         pure storeID
       _ -> fail "No stores found"
 
     -- Get a variant
-    Right variants <- runAPI apiClientEnv $ listVariants apiKey
+    Right variants <- runAPI apiClientEnv $ listVariants apiKey Nothing Nothing
     variantID <- case variants of
       (APIObjects _ _ _ (LS.Object {LS.objectId = Just variantID} : _)) ->
         pure variantID
@@ -367,7 +375,7 @@ checkoutsAPISpec = describe "Checkouts" $ do
     retrievedCheckoutRes `shouldSatisfy` isRight
 
     -- List
-    listRes <- runAPI apiClientEnv $ listCheckouts apiKey
+    listRes <- runAPI apiClientEnv $ listCheckouts apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ checkouts) <- pure listRes
     let checkoutIds = mapMaybe LS.objectId checkouts
@@ -377,7 +385,7 @@ webhooksAPISpec :: TestDefM outers APIClientEnv ()
 webhooksAPISpec = describe "Webhooks" $ do
   it "can list, retrieve, and update webhooks" $ \apiClientEnv -> do
     apiKey <- getAPIKey
-    storesRes <- runAPI apiClientEnv $ listStores apiKey
+    storesRes <- runAPI apiClientEnv $ listStores apiKey Nothing Nothing
     storesRes `shouldSatisfy` isRight
     Right stores <- pure storesRes
     storeID <- case stores of
@@ -402,7 +410,7 @@ webhooksAPISpec = describe "Webhooks" $ do
     createRes `shouldSatisfy` isRight
 
     -- List webhooks
-    listRes <- runAPI apiClientEnv $ listWebhooks apiKey
+    listRes <- runAPI apiClientEnv $ listWebhooks apiKey Nothing Nothing
     listRes `shouldSatisfy` isRight
     Right (APIObjects _ _ _ webhooks) <- pure listRes
     forM_ webhooks $ \webhook ->
