@@ -159,6 +159,18 @@ instance FromJSON Page where
 instance ToJSON Page where
   toJSON = genericToJSON $ aesonDrop (length @[] "Page") camelCase
 
+newtype PageNumber = PageNumber Int
+  deriving (Show, Eq, Generic)
+
+instance ToHttpApiData PageNumber where
+  toUrlPiece (PageNumber n) = toText (show n)
+
+newtype PageSize = PageSize Int
+  deriving (Show, Eq, Generic)
+
+instance ToHttpApiData PageSize where
+  toUrlPiece (PageSize n) = toText (show n)
+
 newtype Meta = Meta {metaPage :: Maybe Page} deriving (Show, Eq, Generic)
 
 instance FromJSON Meta where
@@ -237,7 +249,12 @@ type LemonSqueezyDeleteAPI (t :: Symbol) id a =
     :> Delete '[JSONAPI] (APIObject t id a)
 
 type LemonSqueezyListAPI (t :: Symbol) id a =
-  LemonSqueezyAuth :> "v1" :> t :> Get '[JSONAPI] (APIObjects t id a)
+  LemonSqueezyAuth
+    :> "v1"
+    :> t
+    :> QueryParam "page[number]" (Maybe PageNumber)
+    :> QueryParam "page[size]" (Maybe PageSize)
+    :> Get '[JSONAPI] (APIObjects t id a)
 
 type LemonSqueezyCRLAPI (t :: Symbol) id a =
   LemonSqueezyCreateAPI t id a
@@ -346,6 +363,8 @@ updateCustomer ::
 listCustomers ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APICustomers
 ( createCustomer
     :<|> retrieveCustomer
@@ -363,6 +382,8 @@ retrieveStore ::
 listStores ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APIStores
 (retrieveStore :<|> listStores) = hoistClient p ntClientM $ client p
   where
@@ -376,6 +397,8 @@ retrieveProduct ::
 listProducts ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APIProducts
 (retrieveProduct :<|> listProducts) = hoistClient p ntClientM $ client p
   where
@@ -389,6 +412,8 @@ retrieveVariant ::
 listVariants ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APIVariants
 (retrieveVariant :<|> listVariants) = hoistClient p ntClientM $ client p
   where
@@ -402,6 +427,8 @@ retrievePrice ::
 listPrices ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APIPrices
 (retrievePrice :<|> listPrices) = hoistClient p ntClientM $ client p
   where
@@ -415,6 +442,8 @@ retrieveFile ::
 listFiles ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APIFiles
 (retrieveFile :<|> listFiles) = hoistClient p ntClientM $ client p
   where
@@ -428,6 +457,8 @@ retrieveOrder ::
 listOrders ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APIOrders
 generateOrderInvoice ::
   (MonadReaderAPIClient env m) =>
@@ -447,6 +478,8 @@ retrieveOrderItem ::
 listOrderItems ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APIOrderItems
 (retrieveOrderItem :<|> listOrderItems) =
   hoistClient p ntClientM $ client p
@@ -472,6 +505,8 @@ cancelSubscription ::
 listSubscriptions ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APISubscriptions
 ( retrieveSubscription
     :<|> updateSubscription
@@ -494,6 +529,8 @@ retrieveCheckout ::
 listCheckouts ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APICheckouts
 (createCheckout :<|> retrieveCheckout :<|> listCheckouts) =
   hoistClient p ntClientM $ client p
@@ -524,6 +561,8 @@ deleteWebhook ::
 listWebhooks ::
   (MonadReaderAPIClient env m) =>
   LemonSqueezyAPIKey ->
+  Maybe PageNumber ->
+  Maybe PageSize ->
   ExceptT ClientError m APIWebhooks
 ( createWebhook
     :<|> retrieveWebhook
