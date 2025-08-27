@@ -9,35 +9,24 @@ dependencies:
   - aeson
   - aeson-casing
   - base
-  - bytestring
-  - email-validate
+  - cryptonite
   - generic-lens
   - genvalidity
   - genvalidity-containers
   - genvalidity-text
   - genvalidity-time
-  - http-client
-  - http-client-tls
   - http-media
-  - optparse-applicative
-  - optparse-generic
+  - http-types
   - QuickCheck
   - relude
   - scientific
   - servant
   - servant-client
-  - sydtest
+  - servant-server
   - text
   - time
-  - url
-  - case-insensitive
-  - cryptonite
-  - http-types
-  - memory
-  - servant-server
-  - wai
-  - warp
   - vault
+  - wai
 
 library:
   source-dirs: ./src/
@@ -64,6 +53,8 @@ tests:
     dependencies:
       - genvalidity-sydtest
       - genvalidity-sydtest-aeson
+      - http-client
+      - http-client-tls
       - lemon-squeezy
       - sydtest
       - sydtest-discover
