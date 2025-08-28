@@ -16,6 +16,7 @@ import Data.Time (UTCTime)
 import LemonSqueezy.IDs
 import qualified LemonSqueezy.Object as LS
 import Relude
+import Servant.API (FromHttpApiData, ToHttpApiData)
 
 -- | A webhook event name.
 data WebhookEvent
@@ -72,6 +73,7 @@ type Webhook = LS.Object "webhooks" WebhookID WebhookAttributes
 newtype WebhookSecret = WebhookSecret {unWebhookSecret :: Text}
   deriving (Show, Eq, Generic)
   deriving newtype (FromJSON, ToJSON)
+  deriving newtype (FromHttpApiData, ToHttpApiData)
 
 instance Validity WebhookSecret
 
