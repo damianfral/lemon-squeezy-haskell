@@ -16,7 +16,7 @@ import Data.Map.Lazy (lookup)
 import Data.Text (pack)
 import Data.Text.Encoding ()
 import qualified Data.Vault.Lazy as V
-import LemonSqueezy.Webhook (Webhook, WebhookEvent, WebhookSecret (..))
+import LemonSqueezy.Webhook
 import Network.HTTP.Types (status401)
 import Network.Wai
 import Relude
@@ -78,7 +78,7 @@ instance (Validity a) => Validity (WebhookRequestMeta a)
 instance (GenValid a) => GenValid (WebhookRequestMeta a)
 
 -- | The header used by Lemon Squeezy to send the signature.
-type SignatureHeader = Header "X-Signature" Text
+type SignatureHeader = Header' '[Required] "X-Signature" WebhookSecret
 
 -- | The API for receiving Lemon Squeezy webhooks.
 type WebhookAPI a =
