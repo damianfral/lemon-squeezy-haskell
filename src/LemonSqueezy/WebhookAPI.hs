@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module LemonSqueezy.WebhookSignature where
+module LemonSqueezy.WebhookAPI where
 
 import Crypto.Hash.Algorithms (SHA256)
 import Crypto.MAC.HMAC (hmac, hmacGetDigest)
