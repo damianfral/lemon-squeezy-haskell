@@ -26,6 +26,7 @@ import LemonSqueezy.Webhook
 import Network.Wai
 import Relude
 import Servant
+import Servant.Links
 import Servant.Server.Internal.RouteResult (RouteResult (..))
 
 -- | A webhook request.
@@ -108,6 +109,10 @@ instance
           app req {vault = V.insert reqBodyKey body (vault req)} resp
         _ -> resp $ FailFatal err401 {errReasonPhrase = msg}
   hoistServerWithContext _ = hoistServerWithContext (Proxy @api)
+
+instance (HasLink sub) => HasLink (LemonSqueezyWebhookSignature :> sub) where
+  type MkLink (LemonSqueezyWebhookSignature :> sub) r = MkLink sub r
+  toLink toA _ = toLink toA $ Proxy @sub
 
 -- | The API for receiving Lemon Squeezy webhooks.
 type WebhookAPI a =
