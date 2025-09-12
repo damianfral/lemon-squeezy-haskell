@@ -6,7 +6,7 @@
 module LemonSqueezy.Subscription where
 
 import Data.Aeson
-import Data.Aeson.Casing (aesonDrop, aesonPrefix, snakeCase)
+import Data.Aeson.Casing (aesonDrop, snakeCase)
 import Data.GenValidity
 import Data.GenValidity.Text ()
 import Data.GenValidity.Time ()
@@ -59,10 +59,10 @@ data SubscriptionPause = SubscriptionPause
   deriving (Show, Eq, Generic)
 
 instance FromJSON SubscriptionPause where
-  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+  parseJSON = genericParseJSON $ aesonDrop (length "SubscriptionPause") snakeCase
 
 instance ToJSON SubscriptionPause where
-  toJSON = genericToJSON $ aesonPrefix snakeCase
+  toJSON = genericToJSON $ aesonDrop (length "SubscriptionPause") snakeCase
 
 instance Validity SubscriptionPause
 
