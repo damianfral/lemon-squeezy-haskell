@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module LemonSqueezy.WebhookAPI where
@@ -16,17 +17,17 @@ import Crypto.Hash.Algorithms (SHA256)
 import Crypto.MAC.HMAC (hmac, hmacGetDigest)
 import Data.Aeson
 import Data.Aeson.Casing (aesonDrop, snakeCase)
+import Data.ByteArray.Encoding
 import Data.GenValidity (GenValid, Validity)
 import Data.Map.Lazy (lookup)
 import qualified Data.Map.Lazy as Map
-import Data.Text (pack)
+import qualified Data.Text as T
 import Data.Text.Encoding ()
 import qualified Data.Vault.Lazy as V
 import LemonSqueezy.Webhook
 import Network.Wai
 import Relude
 import Servant
-import Servant.Links
 import Servant.Server.Internal.RouteResult (RouteResult (..))
 
 -- | A webhook request.
@@ -85,40 +86,50 @@ instance (Validity a) => Validity (WebhookRequestMeta a)
 instance (GenValid a) => GenValid (WebhookRequestMeta a)
 
 --
-data LemonSqueezyWebhookSignature deriving (Typeable, Generic)
+newtype LemonSqueezySignedWebhookRequest a
+  = LemonSqueezySignedWebhookRequest (ReqBody '[JSON] (WebhookRequest a))
+  deriving (Typeable, Generic)
 
 lookupHeaderText :: (Ord k) => k -> Map k ByteString -> Maybe Text
 lookupHeaderText key = fmap (decodeUtf8With lenientDecode) . Map.lookup key
 
 instance
   ( HasServer api context,
-    HasContextEntry context WebhookSecret
+    HasContextEntry context WebhookSecret,
+    HasContextEntry (context .++ DefaultErrorFormatters) ErrorFormatters,
+    FromJSON a
   ) =>
-  HasServer (LemonSqueezyWebhookSignature :> api) context
+  HasServer (LemonSqueezySignedWebhookRequest a :> api) context
   where
-  type ServerT (LemonSqueezyWebhookSignature :> api) m = ServerT api m
+  type
+    ServerT (LemonSqueezySignedWebhookRequest a :> api) m =
+      ServerT (ReqBody '[JSON] (WebhookRequest a) :> api) m
   route _ ctx server =
-    route (Proxy @api) ctx server <&> \app req resp -> do
-      let secret = getContextEntry ctx
-      body <- lazyRequestBody req
-      let sig = lookup "X-Signature" $ fromList $ requestHeaders req
-      let msg = "Invalid signature"
-      case isValidSignature secret (toStrict body) . decodeUtf8 <$> sig of
-        Just True -> do
-          reqBodyKey <- requestBodyKey
-          app req {vault = V.insert reqBodyKey body (vault req)} resp
-        _ -> resp $ FailFatal err401 {errReasonPhrase = msg}
-  hoistServerWithContext _ = hoistServerWithContext (Proxy @api)
+    route (Proxy @(ReqBody '[JSON] (WebhookRequest a) :> api)) ctx server
+      <&> \app req resp -> do
+        let secret = getContextEntry ctx
+        body <- lazyRequestBody req
+        let sig = lookup "X-Signature" $ fromList $ requestHeaders req
+        let msg = "Invalid signature"
+        case isValidSignature secret (toStrict body) . decodeUtf8 <$> sig of
+          Just True -> do
+            reqBodyKey <- requestBodyKey
+            app req {vault = V.insert reqBodyKey body (vault req)} resp
+          _ -> resp $ FailFatal err401 {errReasonPhrase = msg}
+  hoistServerWithContext _ =
+    hoistServerWithContext (Proxy @(ReqBody '[JSON] (WebhookRequest a) :> api))
 
-instance (HasLink sub) => HasLink (LemonSqueezyWebhookSignature :> sub) where
-  type MkLink (LemonSqueezyWebhookSignature :> sub) r = MkLink sub r
+instance
+  (HasLink sub) =>
+  HasLink (LemonSqueezySignedWebhookRequest a :> sub)
+  where
+  type
+    MkLink (LemonSqueezySignedWebhookRequest a :> sub) r =
+      MkLink (ReqBody '[JSON] (WebhookRequest a) :> sub) r
   toLink toA _ = toLink toA $ Proxy @sub
 
 -- | The API for receiving Lemon Squeezy webhooks.
-type WebhookAPI a =
-  LemonSqueezyWebhookSignature
-    :> ReqBody '[JSON] (WebhookRequest a)
-    :> Post '[JSON] NoContent
+type WebhookAPI a = LemonSqueezySignedWebhookRequest a :> Post '[JSON] NoContent
 
 -- | A key for storing the raw request body in the WAI vault.
 requestBodyKey :: IO (V.Key LByteString)
@@ -135,7 +146,13 @@ isValidSignature ::
   Text ->
   -- | Whether the signature is valid.
   Bool
-isValidSignature secret body sig = computed == sig
-  where
-    computed = pack . show $ hmacGetDigest @SHA256 digest
-    digest = hmac @ByteString (encodeUtf8 $ unWebhookSecret secret) body
+isValidSignature secret body sigHeader =
+  let computed = computeSignature secret body
+      normalize = T.toLower . T.strip
+   in normalize sigHeader == normalize computed
+
+computeSignature :: WebhookSecret -> ByteString -> Text
+computeSignature secret body =
+  let digest = hmac @ByteString (encodeUtf8 $ unWebhookSecret secret) body
+   in decodeUtf8 @Text @ByteString
+        $ convertToBase Base16 (hmacGetDigest @SHA256 digest)

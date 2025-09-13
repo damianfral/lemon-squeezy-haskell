@@ -7,6 +7,8 @@
 
 module LemonSqueezy.APISpec (spec) where
 
+import Data.GenValidity.ByteString ()
+import Data.GenValidity.Text ()
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import LemonSqueezy.API
@@ -14,11 +16,13 @@ import LemonSqueezy.Checkout
 import LemonSqueezy.Customer
 import qualified LemonSqueezy.Object as LS
 import LemonSqueezy.Webhook
+import LemonSqueezy.WebhookAPI
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (newTlsManager)
 import Relude
 import Servant.Client
 import Test.Syd
+import Test.Syd.Validity
 
 setupClientEnv :: Manager -> SetupFunc ClientEnv
 setupClientEnv m = pure $ mkClientEnv m bURL
@@ -47,19 +51,21 @@ runAPI :: b -> ExceptT e (ReaderT b m) a -> m (Either e a)
 runAPI apiClientEnv = flip runReaderT apiClientEnv . runExceptT
 
 apiSpec :: Spec
-apiSpec = describe "LemonSqueezy API" $ makeServerSpec $ do
-  checkoutsAPISpec
-  customersAPISpec
-  filesAPISpec
-  orderItemsAPISpec
-  ordersAPISpec
-  pricesAPISpec
-  productsAPISpec
-  storesAPISpec
-  subscriptionsAPISpec
-  usersAPISpec
-  variantsAPISpec
-  webhooksAPISpec
+apiSpec = do
+  describe "LemonSqueezy API" $ makeServerSpec $ do
+    checkoutsAPISpec
+    customersAPISpec
+    filesAPISpec
+    orderItemsAPISpec
+    ordersAPISpec
+    pricesAPISpec
+    productsAPISpec
+    storesAPISpec
+    subscriptionsAPISpec
+    usersAPISpec
+    variantsAPISpec
+    webhooksAPISpec
+  isValidSignatureSpec
 
 usersAPISpec :: TestDefM outers APIClientEnv ()
 usersAPISpec = describe "Users" $ do
@@ -439,3 +445,13 @@ webhooksAPISpec = describe "Webhooks" $ do
     Right (APIObject _ _ _ obj'') <- pure updateRes
     (LS.Object {LS.objectAttributes = Just newAttrs}) <- pure obj''
     webhookAttributesUrl newAttrs `shouldBe` Just newUrl
+
+isValidSignatureSpec :: Spec
+isValidSignatureSpec = describe "isValidSignature" $ do
+  it "accepts a valid signature" $ forAllValid $ \(secret, payload) -> do
+    let sig = computeSignature secret payload
+    isValidSignature secret payload sig `shouldBe` True
+
+  it "rejects an invalid signature" $ forAllValid $ \(secret, payload) -> do
+    let badSig = "deadbeef"
+    isValidSignature secret payload badSig `shouldBe` False

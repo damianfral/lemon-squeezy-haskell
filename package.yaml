@@ -17,6 +17,7 @@ dependencies:
   - genvalidity-time
   - http-media
   - http-types
+  - memory
   - QuickCheck
   - relude
   - scientific
@@ -51,6 +52,7 @@ tests:
       - -threaded
       - -with-rtsopts=-N
     dependencies:
+      - genvalidity-bytestring
       - genvalidity-sydtest
       - genvalidity-sydtest-aeson
       - http-client
