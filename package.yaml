@@ -23,6 +23,7 @@ dependencies:
   - scientific
   - servant
   - servant-client
+  - servant-client-core
   - servant-server
   - text
   - time
