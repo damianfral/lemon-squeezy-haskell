@@ -13,28 +13,36 @@
 module LemonSqueezy.WebhookAPI.Client where
 
 import Data.Aeson (ToJSON, encode)
-import Data.ByteString.Lazy ()
 import qualified LemonSqueezy as LS
 import LemonSqueezy.WebhookAPI (computeSignature)
 import qualified LemonSqueezy.WebhookAPI as LS
 import Relude
-import Servant hiding (addHeader)
-import Servant.API.ContentTypes ()
+import Servant
 import Servant.Client
-import Servant.Client.Core (addHeader)
 
 instance
-  (HasClient m sub, MimeRender JSON (LS.WebhookRequest a)) =>
-  HasClient m (LS.LemonSqueezySignedWebhookRequest a :> sub)
+  ( ToJSON a,
+    HasClient m api
+  ) =>
+  HasClient m (LS.LemonSqueezySignedWebhookRequest a :> api)
   where
   type
-    Client m (LS.LemonSqueezySignedWebhookRequest a :> sub) =
-      LS.WebhookSecret -> LS.WebhookRequest a -> Client m sub
-  clientWithRoute pm _ req secret webhookReq =
-    let body = mimeRender (Proxy @JSON) webhookReq
-        sig = computeSignature secret $ toStrict body
-     in clientWithRoute pm (Proxy @sub) $ addHeader "X-Signature" sig req
-  hoistClientMonad pm _ nt f a = hoistClientMonad pm (Proxy @sub) nt . f a
+    Client m (LS.LemonSqueezySignedWebhookRequest a :> api) =
+      LS.WebhookSecret -> LS.WebhookRequest a -> Client m api
 
-instance (ToJSON a) => MimeRender JSON (LS.WebhookRequest a) where
-  mimeRender _ = encode
+  clientWithRoute pm Proxy req secret webhookReq =
+    let body = encode webhookReq
+        sig = computeSignature secret $ toStrict body
+     in clientWithRoute
+          pm
+          (Proxy @(Header "X-Signature" Text :> ReqBody '[JSON] (LS.WebhookRequest a) :> api))
+          req
+          (Just sig)
+          webhookReq
+
+  hoistClientMonad pm Proxy nt f secret =
+    hoistClientMonad
+      pm
+      (Proxy @(Header "X-Signature" Text :> ReqBody '[JSON] (LS.WebhookRequest a) :> api))
+      nt
+      (f secret)

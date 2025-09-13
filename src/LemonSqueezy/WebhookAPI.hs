@@ -23,12 +23,10 @@ import Data.Map.Lazy (lookup)
 import qualified Data.Map.Lazy as Map
 import qualified Data.Text as T
 import Data.Text.Encoding ()
-import qualified Data.Vault.Lazy as V
 import LemonSqueezy.Webhook
 import Network.Wai
 import Relude
 import Servant
-import Servant.Server.Internal.RouteResult (RouteResult (..))
 
 -- | A webhook request.
 -- This is the payload that is sent to a webhook endpoint.
@@ -85,10 +83,8 @@ instance (Validity a) => Validity (WebhookRequestMeta a)
 
 instance (GenValid a) => GenValid (WebhookRequestMeta a)
 
---
-newtype LemonSqueezySignedWebhookRequest a
-  = LemonSqueezySignedWebhookRequest (ReqBody '[JSON] (WebhookRequest a))
-  deriving (Typeable, Generic)
+data LemonSqueezySignedWebhookRequest a
+  deriving (Typeable)
 
 lookupHeaderText :: (Ord k) => k -> Map k ByteString -> Maybe Text
 lookupHeaderText key = fmap (decodeUtf8With lenientDecode) . Map.lookup key
@@ -96,44 +92,36 @@ lookupHeaderText key = fmap (decodeUtf8With lenientDecode) . Map.lookup key
 instance
   ( HasServer api context,
     HasContextEntry context WebhookSecret,
-    HasContextEntry (context .++ DefaultErrorFormatters) ErrorFormatters,
     FromJSON a
   ) =>
   HasServer (LemonSqueezySignedWebhookRequest a :> api) context
   where
   type
     ServerT (LemonSqueezySignedWebhookRequest a :> api) m =
-      ServerT (ReqBody '[JSON] (WebhookRequest a) :> api) m
-  route _ ctx server =
-    route (Proxy @(ReqBody '[JSON] (WebhookRequest a) :> api)) ctx server
-      <&> \app req resp -> do
-        let secret = getContextEntry ctx
+      WebhookRequest a -> ServerT api m
+
+  route _ context subserver =
+    route (Proxy :: Proxy api) context (addBodyCheck subserver)
+    where
+      addBodyCheck ::
+        ServerT (LemonSqueezySignedWebhookRequest a :> api) m ->
+        ServerT api m
+      addBodyCheck s = \req cont -> do
+        let secret = getContextEntry context
         body <- lazyRequestBody req
         let sig = lookup "X-Signature" $ fromList $ requestHeaders req
         let msg = "Invalid signature"
-        case isValidSignature secret (toStrict body) . decodeUtf8 <$> sig of
-          Just True -> do
-            reqBodyKey <- requestBodyKey
-            app req {vault = V.insert reqBodyKey body (vault req)} resp
-          _ -> resp $ FailFatal err401 {errReasonPhrase = msg}
-  hoistServerWithContext _ =
-    hoistServerWithContext (Proxy @(ReqBody '[JSON] (WebhookRequest a) :> api))
+        if isValidSignature secret (toStrict body) . decodeUtf8 <$> sig == Just True
+          then case eitherDecode body of
+            Left err -> cont $ Fail err400 { errBody = fromString err }
+            Right parsedBody -> s parsedBody req cont
+          else cont $ Fail err401 { errReasonPhrase = msg }
 
-instance
-  (HasLink sub) =>
-  HasLink (LemonSqueezySignedWebhookRequest a :> sub)
-  where
-  type
-    MkLink (LemonSqueezySignedWebhookRequest a :> sub) r =
-      MkLink (ReqBody '[JSON] (WebhookRequest a) :> sub) r
-  toLink toA _ = toLink toA $ Proxy @sub
+  hoistServerWithContext _ pc nt s =
+    hoistServerWithContext (Proxy @api) pc nt . s
 
 -- | The API for receiving Lemon Squeezy webhooks.
 type WebhookAPI a = LemonSqueezySignedWebhookRequest a :> Post '[JSON] NoContent
-
--- | A key for storing the raw request body in the WAI vault.
-requestBodyKey :: IO (V.Key LByteString)
-requestBodyKey = V.newKey
 
 -- | Verify a Lemon Squeezy webhook signature.
 -- See https://docs.lemonsqueezy.com/help/webhooks/verifying-signatures
