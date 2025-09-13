@@ -17,11 +17,13 @@ dependencies:
   - genvalidity-time
   - http-media
   - http-types
+  - memory
   - QuickCheck
   - relude
   - scientific
   - servant
   - servant-client
+  - servant-client-core
   - servant-server
   - text
   - time
@@ -51,6 +53,7 @@ tests:
       - -threaded
       - -with-rtsopts=-N
     dependencies:
+      - genvalidity-bytestring
       - genvalidity-sydtest
       - genvalidity-sydtest-aeson
       - http-client
@@ -58,4 +61,5 @@ tests:
       - lemon-squeezy
       - sydtest
       - sydtest-discover
+      - sydtest-servant
       - sydtest-wai
