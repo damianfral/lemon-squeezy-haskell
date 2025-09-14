@@ -1,15 +1,24 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module LemonSqueezy.WebhookAPI where
 
@@ -20,15 +29,20 @@ import Data.Aeson.Casing (aesonDrop, snakeCase)
 import Data.ByteArray.Encoding
 import Data.GenValidity (GenValid, Validity)
 import Data.Map.Lazy (lookup)
-import qualified Data.Map.Lazy as Map
 import qualified Data.Text as T
 import Data.Text.Encoding ()
+import Data.Typeable (typeRep)
 import qualified Data.Vault.Lazy as V
 import LemonSqueezy.Webhook
+import Network.HTTP.Types.Header (hContentType)
 import Network.Wai
 import Relude
 import Servant
-import Servant.Server.Internal.RouteResult (RouteResult (..))
+import Servant.API.ContentTypes (AllCTUnrender (canHandleCTypeH))
+import Servant.API.Modifiers
+import Servant.Server.Internal.Delayed (addBodyCheck)
+import Servant.Server.Internal.DelayedIO
+import Servant.Server.Internal.ErrorFormatter
 
 -- | A webhook request.
 -- This is the payload that is sent to a webhook endpoint.
@@ -85,51 +99,83 @@ instance (Validity a) => Validity (WebhookRequestMeta a)
 
 instance (GenValid a) => GenValid (WebhookRequestMeta a)
 
---
-newtype LemonSqueezySignedWebhookRequest a
-  = LemonSqueezySignedWebhookRequest (ReqBody '[JSON] (WebhookRequest a))
-  deriving (Typeable, Generic)
-
-lookupHeaderText :: (Ord k) => k -> Map k ByteString -> Maybe Text
-lookupHeaderText key = fmap (decodeUtf8With lenientDecode) . Map.lookup key
+data
+  LemonSqueezySignedReqBody
+    (mods :: [Type])
+    (contentTypes :: [Type])
+    (a :: Type)
+  deriving (Typeable)
 
 instance
-  ( HasServer api context,
-    HasContextEntry context WebhookSecret,
-    HasContextEntry (context .++ DefaultErrorFormatters) ErrorFormatters,
-    FromJSON a
+  ( AllCTUnrender list a,
+    HasServer api context,
+    SBoolI (FoldLenient mods),
+    HasContextEntry (MkContextWithErrorFormatter context) ErrorFormatters,
+    HasContextEntry context WebhookSecret
   ) =>
-  HasServer (LemonSqueezySignedWebhookRequest a :> api) context
+  HasServer (LemonSqueezySignedReqBody mods list a :> api :: Type) context
   where
   type
-    ServerT (LemonSqueezySignedWebhookRequest a :> api) m =
-      ServerT (ReqBody '[JSON] (WebhookRequest a) :> api) m
-  route _ ctx server =
-    route (Proxy @(ReqBody '[JSON] (WebhookRequest a) :> api)) ctx server
-      <&> \app req resp -> do
-        let secret = getContextEntry ctx
-        body <- lazyRequestBody req
-        let sig = lookup "X-Signature" $ fromList $ requestHeaders req
-        let msg = "Invalid signature"
-        case isValidSignature secret (toStrict body) . decodeUtf8 <$> sig of
+    ServerT (LemonSqueezySignedReqBody mods list a :> api) m =
+      If (FoldLenient mods) (Either String a) a -> ServerT api m
+
+  hoistServerWithContext _ pc nt s =
+    hoistServerWithContext (Proxy :: Proxy api) pc nt . s
+
+  route Proxy context subserver =
+    route (Proxy :: Proxy api) context
+      $ addBodyCheck subserver ctCheck bodyCheck
+    where
+      rep = typeRep (Proxy :: Proxy ReqBody')
+      formatError =
+        bodyParserErrorFormatter
+          $ getContextEntry
+          $ mkContextWithErrorFormatter context
+
+      -- Content-Type check, we only lookup we can try to parse the request body
+      ctCheck = withRequest $ \request -> do
+        -- See HTTP RFC 2616, section 7.2.1
+        -- http://www.w3.org/Protocols/rfc2616/rfc2616-sec7.html#sec7.2.1
+        -- See also "W3C Internet Media Type registration, consistency of use"
+        -- http://www.w3.org/2001/tag/2002/0129-mime
+        let contentTypeH =
+              fromMaybe "application/octet-stream"
+                $ lookup hContentType
+                $ fromList
+                $ requestHeaders request
+        let canHandleResult :: Maybe (LByteString -> Either String a) =
+              canHandleCTypeH (Proxy :: Proxy list) (fromStrict contentTypeH)
+        case canHandleResult of
+          Nothing -> delayedFail err415
+          Just f -> pure f
+
+      -- Body check, we get a body parsing functions as the first argument.
+      bodyCheck f = withRequest $ \request -> do
+        body <- liftIO (lazyRequestBody request)
+        let secret = getContextEntry context
+        let signature = lookup "X-Signature" $ fromList $ requestHeaders request
+        let signatureText = decodeUtf8With lenientDecode <$> signature
+        case isValidSignature secret (toStrict body) <$> signatureText of
           Just True -> do
-            reqBodyKey <- requestBodyKey
-            app req {vault = V.insert reqBodyKey body (vault req)} resp
-          _ -> resp $ FailFatal err401 {errReasonPhrase = msg}
-  hoistServerWithContext _ =
-    hoistServerWithContext (Proxy @(ReqBody '[JSON] (WebhookRequest a) :> api))
+            let mrqbody = f body
+            case sbool :: SBool (FoldLenient mods) of
+              STrue -> pure mrqbody
+              SFalse -> case mrqbody of
+                Left e -> delayedFailFatal $ formatError rep request e
+                Right v -> pure v
+          _ -> delayedFailFatal err401 {errReasonPhrase = "Invalid signature"}
 
 instance
   (HasLink sub) =>
-  HasLink (LemonSqueezySignedWebhookRequest a :> sub)
+  HasLink (LemonSqueezySignedReqBody mods list a :> sub)
   where
-  type
-    MkLink (LemonSqueezySignedWebhookRequest a :> sub) r =
-      MkLink (ReqBody '[JSON] (WebhookRequest a) :> sub) r
+  type MkLink (LemonSqueezySignedReqBody mods list a :> sub) r = MkLink sub r
   toLink toA _ = toLink toA $ Proxy @sub
 
 -- | The API for receiving Lemon Squeezy webhooks.
-type WebhookAPI a = LemonSqueezySignedWebhookRequest a :> Post '[JSON] NoContent
+type WebhookAPI a =
+  LemonSqueezySignedReqBody '[Required, Strict] '[JSON] (WebhookRequest a)
+    :> Post '[JSON] NoContent
 
 -- | A key for storing the raw request body in the WAI vault.
 requestBodyKey :: IO (V.Key LByteString)

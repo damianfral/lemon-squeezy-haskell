@@ -61,4 +61,5 @@ tests:
       - lemon-squeezy
       - sydtest
       - sydtest-discover
+      - sydtest-servant
       - sydtest-wai
