@@ -39,6 +39,7 @@
               lemon-squeezy = (self.callCabal2nix "lemon-squeezy" filteredSrc {})
                 .overrideAttrs (
                 old: {
+                  buildInputs = old.buildInputs ++ [final.cacert];
                   checkPhase = ''
                     export LEMON_SQUEEZY_API_KEY=${builtins.getEnv "LEMON_SQUEEZY_API_KEY"}
                     ${old.checkPhase}
