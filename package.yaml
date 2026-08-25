@@ -1,5 +1,6 @@
 ---
 name: lemon-squeezy
+synopsis: Haskell client for the Lemon Squeezy payment API
 version: 1.0.0.0
 
 license: MIT
