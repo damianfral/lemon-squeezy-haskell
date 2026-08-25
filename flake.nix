@@ -1,5 +1,5 @@
 {
-  description = "TBD";
+  description = "A Haskell client library for the Lemon Squeezy API.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/26.05";
